@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>화려한 점심 메뉴 룰렛</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            background-color: #f7f9fc;
+            padding: 20px 15px;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            margin-top: 10px;
+            margin-bottom: 25px;
+            font-size: 24px;
+            color: #333;
+            text-align: center;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .roulette-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .roulette-container {
+            position: relative;
+            width: 85vw;
+            height: 85vw;
+            max-width: 360px;
+            max-height: 360px;
+            margin-bottom: 25px;
+        }
+
+        .arrow {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 24px solid #ff4757;
+            z-index: 10;
+            filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.2));
+        }
+
+        .wheel {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 6px solid #fff;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .menu-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .center-pin {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 36px;
+            height: 36px;
+            background-color: #fff;
+            border-radius: 50%;
+            z-index: 5;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-spin {
+            width: 85vw;
+            max-width: 280px;
+            padding: 14px 0;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #3742fa;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(55, 66, 250, 0.3);
+            transition: background-color 0.2s;
+        }
+
+        .btn-spin:active {
+            background-color: #2f3542;
+        }
+
+        .btn-spin:disabled {
+            background-color: #ccc;
+            box-shadow: none;
+        }
+
+        /* 리스트 관리 영역 */
+        .manager-container {
+            width: 100%;
+            background: #fff;
+            padding: 18px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        }
+
+        .manager-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #555;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .input-menu {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            outline: none;
+            font-size: 15px;
+        }
+
+        .input-menu:focus {
+            border-color: #2ed573;
+        }
+
+        .btn-add {
+            padding: 0 18px;
+            background-color: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .menu-list-box {
+            max-height: 180px;
+            overflow-y: auto;
+            border-top: 1px solid #edf2f7;
+            padding-top: 8px;
+        }
+
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 8px;
+            margin-bottom: 6px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #ff4757;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            padding: 4px 8px;
+        }
+
+        /* 고도화: 결과 팝업 모달 스타일 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            width: 85vw;
+            max-width: 320px;
+            padding: 30px 20px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: scale(0.7); /* GSAP 등장 애니메이션 초기값 */
+        }
+
+        .modal-subtitle {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .modal-result-name {
+            font-size: 26px;
+            font-weight: 800;
+            color: #3742fa;
+            margin-bottom: 20px;
+            word-break: break-all;
+        }
+
+        .btn-close-modal {
+            width: 100%;
+            padding: 12px 0;
+            background-color: #2f3542;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        @media (min-width: 768px) {
+            body { justify-content: center; }
+            .app-container { flex-direction: row; max-width: 750px; gap: 50px; }
+            .manager-container { width: 320px; }
+            .roulette-container { width: 360px; height: 360px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>오늘 뭐 먹지?</h1>
+
+    <div class="app-container">
+        <div class="roulette-wrapper">
+            <div class="roulette-container">
+                <div class="arrow"></div>
+                <div class="wheel" id="wheel"></div>
+                <div class="center-pin"></div>
+            </div>
+            <button class="btn-spin" id="spinBtn">룰렛 돌리기</button>
+        </div>
+
+        <div class="manager-container">
+            <div class="manager-title">메뉴 설정 (최소 2개)</div>
+            <div class="input-group">
+                <input type="text" class="input-menu" id="menuInput" placeholder="음식명 입력 (최대 10자)" maxlength="10">
+                <button class="btn-add" id="addBtn">추가</button>
+            </div>
+            <div class="menu-list-box" id="listBox"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content" id="modalContent">
+            <div class="modal-subtitle">오늘의 추천 점심 메뉴</div>
+            <div class="modal-result-name" id="modalResultName">돈까스</div>
+            <button class="btn-close-modal" id="closeModalBtn">좋아요!</button>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'roulette_menus_v3';
+        const defaultMenus = ['김치찌개', '짜장면', '돈까스', '초밥', '쌀국수', '샌드위치'];
+        
+        let menuList = loadMenus();
+        const colors = ['#ff6b6b', '#feca57', '#1dd1a1', '#54a0ff', '#5f27cd', '#ff9f43', '#00d2d3', '#b8e994'];
+
+        const wheel = document.getElementById('wheel');
+        const spinBtn = document.getElementById('spinBtn');
+        const menuInput = document.getElementById('menuInput');
+        const addBtn = document.getElementById('addBtn');
+        const listBox = document.getElementById('listBox');
+        
+        // 모달 관련 DOM
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalContent = document.getElementById('modalContent');
+        const modalResultName = document.getElementById('modalResultName');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        let currentRotation = 0; 
+        let isSpinning = false;
+
+        function loadMenus() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try { return JSON.parse(saved); } catch (e) { return defaultMenus; }
+            }
+            return defaultMenus;
+        }
+
+        function saveMenus() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(menuList));
+        }
+
+        function renderWheel() {
+            wheel.innerHTML = '';
+            const totalItems = menuList.length;
+            const arcAngle = 360 / totalItems;
+
+            let gradientString = 'conic-gradient(';
+            menuList.forEach((menu, index) => {
+                const startAngle = index * arcAngle;
+                const endAngle = (index + 1) * arcAngle;
+                gradientString += `${colors[index % colors.length]} ${startAngle}deg ${endAngle}deg`;
+                if (index < totalItems - 1) gradientString += ', ';
+            });
+            gradientString += ')';
+            wheel.style.background = gradientString;
+
+            const currentRadius = wheel.offsetWidth / 2;
+            const textPositionRadius = currentRadius * 0.62;
+
+            menuList.forEach((menu, index) => {
+                const label = document.createElement('div');
+                label.className = 'menu-label';
+                label.innerText = menu;
+
+                const centerAngle = (index * arcAngle) + (arcAngle / 2) - 90;
+                const radians = (centerAngle * Math.PI) / 180;
+
+                const x = Math.cos(radians) * textPositionRadius;
+                const y = Math.sin(radians) * textPositionRadius;
+
+                label.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${centerAngle + 90}deg)`;
+                
+                if(totalItems > 8) {
+                    label.style.fontSize = '12px';
+                } else if(totalItems > 12) {
+                    label.style.fontSize = '10px';
+                }
+
+                wheel.appendChild(label);
+            });
+
+            spinBtn.disabled = totalItems < 2 || isSpinning;
+        }
+
+        function renderList() {
+            listBox.innerHTML = '';
+            menuList.forEach((menu, index) => {
+                const item = document.createElement('div');
+                item.className = 'menu-item';
+                item.innerHTML = `
+                    <span>${menu}</span>
+                    <button class="btn-delete" onclick="deleteMenu(${index})">삭제</button>
+                `;
+                listBox.appendChild(item);
+            });
+        }
+
+        function addMenu() {
+            const value = menuInput.value.trim();
+            if (!value) return;
+            
+            menuList.push(value);
+            menuInput.value = '';
+            
+            saveMenus();
+            renderWheel();
+            renderList();
+        }
+
+        window.deleteMenu = function(index) {
+            if (menuList.length <= 2) {
+                alert("룰렛을 구성하려면 최소 2개의 메뉴가 필요합니다.");
+                return;
+            }
+            menuList.splice(index, 1);
+            
+            saveMenus();
+            renderWheel();
+            renderList();
+        }
+
+        // 축하 연출 파트: 연속 폭죽 효과 함수
+        function fireConfetti() {
+            const duration = 2 * 1000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                // 왼쪽에서 쏘아 올리기
+                confetti({
+                    particleCount: 4,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0, y: 0.8 }
+                });
+                // 오른쪽에서 쏘아 올리기
+                confetti({
+                    particleCount: 4,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1, y: 0.8 }
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+
+        // 결과 모달창 열기 (GSAP 탑재)
+        function showResultModal(menuName) {
+            modalResultName.innerText = menuName;
+            modalOverlay.classList.add('active');
+            
+            // 팝업이 튕기듯 커지는 연출 (Back.easeOut 예외 적용)
+            gsap.to(modalContent, {
+                scale: 1,
+                duration: 0.5,
+                ease: 'back.out(1.7)'
+            });
+
+            // 팝업 오픈과 동시에 폭죽 기폭
+            fireConfetti();
+        }
+
+        // 결과 모달창 닫기
+        function closeResultModal() {
+            gsap.to(modalContent, {
+                scale: 0.7,
+                duration: 0.2,
+                ease: 'power2.in',
+                onComplete: () => {
+                    modalOverlay.classList.remove('active');
+                }
+            });
+        }
+
+        function spinRoulette() {
+            if (menuList.length < 2 || isSpinning) return;
+
+            isSpinning = true;
+            spinBtn.disabled = true;
+
+            const totalItems = menuList.length;
+            const arcAngle = 360 / totalItems;
+            const randomIndex = Math.floor(Math.random() * totalItems);
+            
+            const targetMenuAngle = 360 - (randomIndex * arcAngle) - (arcAngle / 2);
+            const baseRotation = 2160; 
+            
+            const finalRotation = currentRotation + baseRotation + (targetMenuAngle - (currentRotation % 360));
+            currentRotation = finalRotation;
+
+            gsap.to(wheel, {
+                rotation: finalRotation,
+                duration: 4.0,
+                ease: 'power4.out',
+                onComplete: () => {
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                    // 애니메이션 종료 즉시 모달 팝업 호출
+                    showResultModal(menuList[randomIndex]);
+                }
+            });
+        }
+
+        spinBtn.addEventListener('click', spinRoulette);
+        addBtn.addEventListener('click', addMenu);
+        menuInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addMenu();
+        });
+        closeModalBtn.addEventListener('click', closeResultModal);
+
+        window.addEventListener('resize', renderWheel);
+
+        renderWheel();
+        renderList();
+    </script>
+</body>
+</html>
