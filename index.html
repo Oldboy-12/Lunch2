@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>화려한 점심 메뉴 룰렛</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3742fa">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="lunch icon.png">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="오늘 뭐 먹지? 점심 메뉴 룰렛">
+    <meta property="og:description" content="결정 장애 해결! 폭죽이 터지는 화려한 점심 메뉴 룰렛 앱">
+    <meta property="og:image" content="lunch OG.png">
+    <meta property="og:url" content="https://oldboy-12.github.io/Lunch2/index.html">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -207,7 +220,7 @@
             padding: 4px 8px;
         }
 
-        /* 고도화: 결과 팝업 모달 스타일 */
+        /* 결과 팝업 모달 스타일 */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -239,7 +252,7 @@
             border-radius: 20px;
             text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transform: scale(0.7); /* GSAP 등장 애니메이션 초기값 */
+            transform: scale(0.7);
         }
 
         .modal-subtitle {
@@ -323,7 +336,6 @@
         const addBtn = document.getElementById('addBtn');
         const listBox = document.getElementById('listBox');
         
-        // 모달 관련 DOM
         const modalOverlay = document.getElementById('modalOverlay');
         const modalContent = document.getElementById('modalContent');
         const modalResultName = document.getElementById('modalResultName');
@@ -424,58 +436,30 @@
             renderList();
         }
 
-        // 축하 연출 파트: 연속 폭죽 효과 함수
         function fireConfetti() {
             const duration = 2 * 1000;
             const end = Date.now() + duration;
 
             (function frame() {
-                // 왼쪽에서 쏘아 올리기
-                confetti({
-                    particleCount: 4,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0, y: 0.8 }
-                });
-                // 오른쪽에서 쏘아 올리기
-                confetti({
-                    particleCount: 4,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1, y: 0.8 }
-                });
-
-                if (Date.now() < end) {
-                    requestAnimationFrame(frame);
-                }
+                confetti({ particleCount: 4, angle: 60, spread: 55, origin: { x: 0, y: 0.8 } });
+                confetti({ particleCount: 4, angle: 120, spread: 55, origin: { x: 1, y: 0.8 } });
+                if (Date.now() < end) { requestAnimationFrame(frame); }
             }());
         }
 
-        // 결과 모달창 열기 (GSAP 탑재)
         function showResultModal(menuName) {
             modalResultName.innerText = menuName;
             modalOverlay.classList.add('active');
-            
-            // 팝업이 튕기듯 커지는 연출 (Back.easeOut 예외 적용)
-            gsap.to(modalContent, {
-                scale: 1,
-                duration: 0.5,
-                ease: 'back.out(1.7)'
-            });
-
-            // 팝업 오픈과 동시에 폭죽 기폭
+            gsap.to(modalContent, { scale: 1, duration: 0.5, ease: 'back.out(1.7)' });
             fireConfetti();
         }
 
-        // 결과 모달창 닫기
         function closeResultModal() {
             gsap.to(modalContent, {
                 scale: 0.7,
                 duration: 0.2,
                 ease: 'power2.in',
-                onComplete: () => {
-                    modalOverlay.classList.remove('active');
-                }
+                onComplete: () => { modalOverlay.classList.remove('active'); }
             });
         }
 
@@ -502,7 +486,6 @@
                 onComplete: () => {
                     isSpinning = false;
                     spinBtn.disabled = false;
-                    // 애니메이션 종료 즉시 모달 팝업 호출
                     showResultModal(menuList[randomIndex]);
                 }
             });
@@ -519,6 +502,17 @@
 
         renderWheel();
         renderList();
+
+        // ----------------------------------------------------
+        // [추가] 서비스 워커 기기 등록 스크립트 (PWA)
+        // ----------------------------------------------------
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker 등록 성공:', reg.scope))
+                    .catch(err => console.log('Service Worker 등록 실패:', err));
+            });
+        }
     </script>
 </body>
 </html>
